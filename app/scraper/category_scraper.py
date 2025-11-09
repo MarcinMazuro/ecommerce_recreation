@@ -62,6 +62,7 @@ try:
     
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(json.dumps(categories_tree, indent=2, ensure_ascii=False))
+    print(f"Kategorie zostały zapisane do {output_path}")
 
 
 except requests.RequestException as e:
