@@ -1,9 +1,10 @@
 import json
 import sys
+from pathlib import Path
 from slugify import slugify
 from prestashop_api import get_api_xml, post_api_xml
 
-INPUT_FILE = '../data/categories.json' 
+INPUT_FILE = Path(__file__).parent.parent / 'data' / 'categories.json'
 ID_KATEGORII_GLOWNEJ = 2
 
 created_categories = {}

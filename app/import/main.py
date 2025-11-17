@@ -65,7 +65,6 @@ Dostępne opcje:
             # Uruchom skrypt w tym samym interpreterze Python
             result = subprocess.run(
                 [sys.executable, str(script_path)],
-                cwd=str(self.base_dir.parent / 'data'),
                 capture_output=False,
                 text=True
             )
@@ -199,7 +198,7 @@ Dostępne opcje:
             self.print_menu()
             
             try:
-                choice = input("Wybierz opcję [0-6]: ").strip()
+                choice = input("Wybierz opcję [0-1]: ").strip()
                 
                 if choice == '0':
                     print("\n👋 Do widzenia!\n")

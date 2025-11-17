@@ -249,8 +249,6 @@ def main():
             print(f"BŁĄD: Nie udało się utworzyć produktu {name}", file=sys.stderr)
             continue
             
-        product_id = new_product_xml.find('.//product/id').text
-        print(f"  Utworzono produkt. ID: {product_id}")
 
     print("\n--- Zakończono import produktów ---")
     print("Uruchom teraz skrypt update_stocks_images.py aby ustawić stany magazynowe i zdjęcia")

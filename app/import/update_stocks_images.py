@@ -6,8 +6,8 @@ from pathlib import Path
 import random
 from prestashop_api import get_api_xml, put_api_xml, post_image
 
-INPUT_FILE = '../data/products_with_details.json'
-IMAGES_DIR = '../data/images'
+INPUT_FILE = Path(__file__).parent.parent / 'data' / 'products_with_details.json'
+IMAGES_DIR = Path(__file__).parent.parent / 'data' / 'images'
 
 
 def sanitize_filename(name):
