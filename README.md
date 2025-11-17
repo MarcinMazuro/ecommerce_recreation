@@ -131,9 +131,10 @@ Rezultaty zapisywane są w `app/data/` w formacie JSON z kodowaniem UTF-8.
 2. Stwórz plik .env
 
 3. Umieść w nim dane w taki sposob:
+   
 PRESTASHOP_URL=https://localhost:8443/api
 
-API_KEY=
+API_KEY=kod
 
 5. Jeśli chcesz zaimportować również zdjęcia, najpierw odpal skrypt w scraper/image_downloader.py (chwilowo, moze potem nie bedzie trzeba)
 
