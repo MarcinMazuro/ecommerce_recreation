@@ -1,51 +1,14 @@
-import requests
 import json
-import xml.etree.ElementTree as ET
-from slugify import slugify
 import sys
-import warnings
-# --- KONFIGURACJA ---
-PRESTASHOP_URL = 'https://localhost:8443/api' # Użyj portu 8443 jeśli masz HTTPS
-API_KEY = '9HI4BPPVSZCVULACXFQUYMABJUE74X5V' # Wklej klucz z Panelu Admina
-INPUT_FILE = 'categories.json' 
-ID_KATEGORII_GLOWNEJ = 2 # Domyślny ID kategorii "Home" w PrestaShop
+from slugify import slugify
+from prestashop_api import get_api_xml, post_api_xml
 
-# Globalna mapa do przechowywania już utworzonych kategorii, aby uniknąć duplikatów
-# Klucz: (nazwa, id_rodzica), Wartość: id_kategorii
+INPUT_FILE = '../data/categories.json' 
+ID_KATEGORII_GLOWNEJ = 2
+
 created_categories = {}
 
-session = requests.Session()
-session.auth = (API_KEY, '')
-session.verify = False # <-- DODAJ TĘ LINIĘ
-
-# Ta linia wyłączy denerwujące ostrzeżenia o "niezaufanym" połączeniu
-warnings.filterwarnings('ignore', message='Unverified HTTPS request')
-
-# --- FUNKCJE POMOCNICZE API ---
-
-def get_api_xml(endpoint, options=None):
-    try:
-        url = f"{PRESTASHOP_URL}/{endpoint}"
-        response = session.get(url, params=options)
-        response.raise_for_status()
-        return ET.fromstring(response.content)
-    except requests.exceptions.RequestException as e:
-        print(f"Błąd GET {url}: {e}\nOdpowiedź: {e.response.content.decode()}", file=sys.stderr)
-        return None
-
-def post_api_xml(endpoint, xml_data):
-    try:
-        url = f"{PRESTASHOP_URL}/{endpoint}"
-        headers = {'Content-Type': 'application/xml'}
-        response = session.post(url, data=xml_data.encode('utf-8'))
-        response.raise_for_status()
-        return ET.fromstring(response.content)
-    except requests.exceptions.RequestException as e:
-        print(f"Błąd POST {url}: {e}\nOdpowiedź: {e.response.content.decode()}", file=sys.stderr)
-        return None
-
 def get_or_create_category(name, parent_id):
-    """Sprawdza lub tworzy kategorię i zwraca jej ID."""
     cache_key = (name, parent_id)
     if cache_key in created_categories:
         return created_categories[cache_key]
@@ -83,10 +46,8 @@ def get_or_create_category(name, parent_id):
         print(f"  BŁĄD: Nie udało się utworzyć kategorii '{name}'")
         return None
 
-# --- FUNKCJA REKURENCYJNA ---
 
 def process_categories_recursively(category_list, parent_id):
-    """Rekursywnie przetwarza listę kategorii."""
     if not category_list:
         return
 
@@ -102,7 +63,6 @@ def process_categories_recursively(category_list, parent_id):
             if subcategories:
                 process_categories_recursively(subcategories, new_category_id)
 
-# --- GŁÓWNA FUNKCJA ---
 
 def main():
     print(f"Rozpoczynanie importu drzewa kategorii z pliku: {INPUT_FILE}")

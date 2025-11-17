@@ -6,24 +6,21 @@ from slugify import slugify
 import sys
 import io
 
-# --- KONFIGURACJA ---
-PRESTASHOP_URL = 'https://localhost:8443/api' # Użyj portu 8443 jeśli masz HTTPS
-API_KEY = '9HI4BPPVSZCVULACXFQUYMABJUE74X5V' # Ten sam klucz co w skrypcie 1
-INPUT_FILE = 'products_with_details.json' # Plik z listą produktów
-DOMYSLNA_ILOSC = 9 # Zgodnie z wymogiem < 10
+PRESTASHOP_URL = 'https://localhost:8443/api' 
+API_KEY = '9HI4BPPVSZCVULACXFQUYMABJUE74X5V'
+INPUT_FILE = '../data/products_with_details.json'
+
 
 session = requests.Session()
 session.auth = (API_KEY, '')
 session.auth = (API_KEY, '')
-session.verify = False # <-- DODAJ TĘ LINIĘ
+session.verify = False 
 
-# Mapy cache, aby nie pytać API o to samo
 manufacturers_cache = {}
 categories_cache = {}
 features_cache = {}
 feature_values_cache = {}
 
-# --- FUNKCJE POMOCNICZE API (Skopiowane ze skryptu 1) ---
 
 def get_api_xml(endpoint, options=None):
     try:
@@ -50,7 +47,6 @@ def put_api_xml(endpoint, xml_data):
     try:
         url = f"{PRESTASHOP_URL}/{endpoint}"
         headers = {'Content-Type': 'application/xml'}
-        # ET.tostring zwraca bajty, nie trzeba kodować
         response = session.put(url, data=xml_data) 
         response.raise_for_status()
         return True
@@ -58,7 +54,6 @@ def put_api_xml(endpoint, xml_data):
         print(f"Błąd PUT {url}: {e}\nOdpowiedź: {e.response.content.decode()}", file=sys.stderr)
         return False
 
-# --- FUNKCJE POMOCNICZE DANYCH ---
 
 def clean_price(price_str):
     """Przekształca '31.00 zł' na '31.00'."""
@@ -81,7 +76,6 @@ def format_html(text):
     
     return f"<p>{text}</p>"
 
-# --- FUNKCJE "ZNAJDŹ LUB UTWÓRZ" ---
 
 def get_or_create_manufacturer(name):
     if not name: return '0'
@@ -131,9 +125,7 @@ def get_category_id_by_path(path_str):
                 parent_id = xml.find('.//category/id').text
                 categories_cache[cache_key] = parent_id
             else:
-                # Kategoria powinna być utworzona przez Skrypt 1, ale na wszelki wypadek...
                 print(f"    Ostrzeżenie: Nie znaleziono kategorii '{part}' w rodzicu {parent_id}.")
-                # Zwracamy ostatnie znane ID
                 return parent_id, list(all_ids)
         
         all_ids.add(parent_id)
@@ -154,7 +146,6 @@ def get_or_create_feature(name):
         features_cache[name] = feature_id
         return feature_id
     
-    # Tworzenie nowej cechy
     xml_data = f"""<?xml version="1.0" encoding="UTF-8"?>
 <prestashop xmlns:xlink="http://www.w3.org/1999/xlink">
 <product_feature>
@@ -185,7 +176,6 @@ def get_or_create_feature_value(feature_id, value):
         feature_values_cache[cache_key] = value_id
         return value_id
     
-    # Tworzenie nowej wartości cechy
     xml_data = f"""<?xml version="1.0" encoding="UTF-8"?>
 <prestashop xmlns:xlink="http://www.w3.org/1999/xlink">
 <product_feature_value>
@@ -203,69 +193,6 @@ def get_or_create_feature_value(feature_id, value):
     return value_id
 
 
-# --- FUNKCJE PRODUKTU ---
-
-import xml.etree.ElementTree as ET # Upewnij się, że ET jest zaimportowane
-
-def set_stock(product_id, quantity=DOMYSLNA_ILOSC):
-    print(f"  Ustawianie stanu magazynowego ({quantity} szt.)")
-    options = {'filter[id_product]': product_id, 'display': 'full'}
-    
-    # 1. Znajdź ID stanu magazynowego dla produktu
-    xml_list = get_api_xml('stock_availables', options)
-    
-    if xml_list is None or xml_list.find('.//stock_available') is None:
-        print(f"    Błąd: Nie znaleziono 'stock_available' dla produktu {product_id}")
-        return
-
-    # UWAGA: To zadziała tylko dla produktów prostych (bez kombinacji)
-    stock_id = xml_list.find('.//stock_available/id').text
-    
-    # 2. Pobierz pełny XML dla tego konkretnego ID stanu
-    stock_xml = get_api_xml(f'stock_availables/{stock_id}')
-    
-    if stock_xml is None: 
-        print(f"    Błąd: Nie udało się pobrać XML dla stock_id {stock_id}")
-        return
-
-    # 3. Znajdź główny węzeł <stock_available> w pobranym XML
-    stock_node = stock_xml.find('.//stock_available')
-    if stock_node is None:
-        print(f"    Błąd: Nie znaleziono węzła <stock_available> w odpowiedzi dla {stock_id}")
-        return
-
-    # 4. Zmodyfikuj ilość wewnątrz węzła <stock_available>
-    quantity_node = stock_node.find('.//quantity')
-    if quantity_node is not None:
-        quantity_node.text = str(quantity)
-    else:
-        print(f"    Błąd: Nie znaleziono węzła <quantity> dla {stock_id}")
-        return
-
-    # 5. Usuń pola tylko do odczytu z węzła <stock_available>
-    for field in ['id_product_attribute', 'depends_on_stock', 'out_of_stock', 'shop_name']:
-        # Użyj './' aby szukać tylko bezpośrednich dzieci 'stock_node'
-        elem = stock_node.find(f'./{field}') 
-        if elem is not None:
-            stock_node.remove(elem) # Usuń 'elem' z jego rodzica, którym jest 'stock_node'
-
-    # 6. Wyślij zaktualizowany XML (cały dokument)
-    put_api_xml(f'stock_availables/{stock_id}', ET.tostring(stock_xml))
-
-def upload_image(product_id, image_url):
-    print(f"  Pobieranie obrazu: {image_url}")
-    try:
-        response = requests.get(image_url)
-        response.raise_for_status()
-        
-        files = {'image': (f'product_{product_id}.jpg', response.content, 'image/jpeg')}
-        url = f"{PRESTASHOP_URL}/images/products/{product_id}"
-        
-        upload_response = session.post(url, files=files)
-        upload_response.raise_for_status()
-        print("    Obraz wgrany pomyślnie.")
-    except requests.exceptions.RequestException as e:
-        print(f"    Błąd wgrywania obrazu: {e}", file=sys.stderr)
 
 # --- GŁÓWNA FUNKCJA ---
 
@@ -366,15 +293,9 @@ def main():
             
         product_id = new_product_xml.find('.//product/id').text
         print(f"  Utworzono produkt. ID: {product_id}")
-        
-        # 7. Ustaw stan magazynowy
-        set_stock(product_id)
-
-        # 8. Wgraj zdjęcia
-        for img_url in details.get('zdjecia', []):
-            upload_image(product_id, img_url)
 
     print("\n--- Zakończono import produktów ---")
+    print("Uruchom teraz skrypt update_stocks_images.py aby ustawić stany magazynowe i zdjęcia")
 
 if __name__ == "__main__":
     main()

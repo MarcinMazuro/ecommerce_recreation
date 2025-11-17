@@ -113,9 +113,9 @@ Rezultaty zapisywane są w `app/data/` w formacie JSON z kodowaniem UTF-8.
 **Konfiguracja Web Services w PrestaShop:**
 
 1. Zaloguj się do panelu admina: `https://localhost:8443/admin475evahuy/`
-2. Przejdź do: **Konfiguracja → Web Services (Usługi internetowe)**
-3. Włącz opcję **"Włącz usługę Web Service PrestaShop"**
-4. Przejdź do zakładki **"Klucze"** i kliknij **"Dodaj nowy klucz Web Service"**
+2. Przejdź do: **Konfiguruj→ Zaawansowane→API**
+3. Włącz opcję **"Włącz usługę API PrestaShop"**
+4. Kliknij **"Dodaj nowy klucz API**
 5. Wypełnij formularz:
    - **Klucz:** zostanie wygenerowany automatycznie (skopiuj go!)
    - **Opis:** "Import produktów ze scrapowania"
@@ -125,21 +125,21 @@ Rezultaty zapisywane są w `app/data/` w formacie JSON z kodowaniem UTF-8.
 
 **Uruchomienie importu:**
 
-```bash
-cd app/data
 
-# Ustaw klucz API jako zmienną środowiskową
-export PRESTASHOP_API_KEY="TWOJ_KLUCZ_API"
+1. cd app/import
 
-#Wyczysc dane jesli w bazie znajduja sie produkty lub kategorie
-python clean_prestashop.py
+2. Stwórz plik .env
 
-# Uruchom import kategorii
-python import_categories.py
+3. Umieść w nim dane w taki sposob:
+# PrestaShop API Configuration
+PRESTASHOP_URL=https://localhost:8443/api
+API_KEY=
 
-# Uruchom import produktow
-python import_products.py
-```
+4. Jeśli chcesz zaimportować również zdjęcia, najpierw odpal skrypt w scraper/image_downloader.py (chwilowo, moze potem nie bedzie trzeba)
+
+5.Odpal **python main.py** w folderze import
+
+
 
 Skrypt zaimportuje:
 - Wszystkie kategorie i podkategorie ze scrapowania
