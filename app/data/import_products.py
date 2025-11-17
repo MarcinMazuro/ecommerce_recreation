@@ -20,6 +20,8 @@ session.verify = False # <-- DODAJ TĘ LINIĘ
 # Mapy cache, aby nie pytać API o to samo
 manufacturers_cache = {}
 categories_cache = {}
+features_cache = {}
+feature_values_cache = {}
 
 # --- FUNKCJE POMOCNICZE API (Skopiowane ze skryptu 1) ---
 
@@ -65,10 +67,19 @@ def clean_price(price_str):
     return f"{float(price):.2f}" if price else "0.00"
 
 def format_html(text):
-    """Zmienia nowe linie na tagi <p> dla opisów PrestaShop."""
+    """Formatuje tekst z \n na HTML. Słowa przed \n są pogrubiane."""
     if not text: return ""
-    paragraphs = text.split('\n')
-    return "".join(f"<p>{p.strip()}</p>" for p in paragraphs if p.strip())
+    
+    text = re.sub(r'([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż\s]+)\n([a-ząćęłńóśźż])', r'<strong>\1</strong>\n\2', text)
+    
+    text = text.replace('\n\n', '|||PARAGRAPH|||')
+    text = text.replace('\n', ' ')
+    text = text.replace('|||PARAGRAPH|||', '</p><p>')
+    
+    # Dodaj <br> przed każdym pogrubieniem (oprócz pierwszego)
+    text = re.sub(r'([a-ząćęłńóśźż\.]) <strong>', r'\1<br><strong>', text)
+    
+    return f"<p>{text}</p>"
 
 # --- FUNKCJE "ZNAJDŹ LUB UTWÓRZ" ---
 
@@ -88,8 +99,7 @@ def get_or_create_manufacturer(name):
     print(f"    Tworzenie producenta: {name}")
     xml_data = f"""<prestashop><manufacturer>
         <active>1</active>
-        <name>{name}</name>
-        <link_rewrite>{slugify(name)}</link_rewrite> 
+        <name><![CDATA[{name}]]></name>
     </manufacturer></prestashop>"""
     new_xml = post_api_xml('manufacturers', xml_data)
     if new_xml is None:
@@ -131,30 +141,115 @@ def get_category_id_by_path(path_str):
     return parent_id, list(all_ids) # Zwraca ID ostatniej kategorii i listę wszystkich ID
 
 
+def get_or_create_feature(name):
+    """Znajduje lub tworzy cechę (feature) po nazwie."""
+    if name in features_cache:
+        return features_cache[name]
+    
+    options = {'filter[name]': name, 'display': 'full'}
+    xml = get_api_xml('product_features', options)
+    
+    if xml is not None and xml.find('.//product_feature') is not None:
+        feature_id = xml.find('.//product_feature/id').text
+        features_cache[name] = feature_id
+        return feature_id
+    
+    # Tworzenie nowej cechy
+    xml_data = f"""<?xml version="1.0" encoding="UTF-8"?>
+<prestashop xmlns:xlink="http://www.w3.org/1999/xlink">
+<product_feature>
+    <name><language id="1"><![CDATA[{name}]]></language></name>
+</product_feature>
+</prestashop>"""
+    
+    new_xml = post_api_xml('product_features', xml_data)
+    if new_xml is None:
+        return None
+    
+    feature_id = new_xml.find('.//product_feature/id').text
+    features_cache[name] = feature_id
+    return feature_id
+
+
+def get_or_create_feature_value(feature_id, value):
+    """Znajduje lub tworzy wartość cechy (feature value)."""
+    cache_key = (feature_id, value)
+    if cache_key in feature_values_cache:
+        return feature_values_cache[cache_key]
+    
+    options = {'filter[id_feature]': feature_id, 'filter[value]': value, 'display': 'full'}
+    xml = get_api_xml('product_feature_values', options)
+    
+    if xml is not None and xml.find('.//product_feature_value') is not None:
+        value_id = xml.find('.//product_feature_value/id').text
+        feature_values_cache[cache_key] = value_id
+        return value_id
+    
+    # Tworzenie nowej wartości cechy
+    xml_data = f"""<?xml version="1.0" encoding="UTF-8"?>
+<prestashop xmlns:xlink="http://www.w3.org/1999/xlink">
+<product_feature_value>
+    <id_feature>{feature_id}</id_feature>
+    <value><language id="1"><![CDATA[{value}]]></language></value>
+</product_feature_value>
+</prestashop>"""
+    
+    new_xml = post_api_xml('product_feature_values', xml_data)
+    if new_xml is None:
+        return None
+    
+    value_id = new_xml.find('.//product_feature_value/id').text
+    feature_values_cache[cache_key] = value_id
+    return value_id
+
+
 # --- FUNKCJE PRODUKTU ---
+
+import xml.etree.ElementTree as ET # Upewnij się, że ET jest zaimportowane
 
 def set_stock(product_id, quantity=DOMYSLNA_ILOSC):
     print(f"  Ustawianie stanu magazynowego ({quantity} szt.)")
     options = {'filter[id_product]': product_id, 'display': 'full'}
-    xml = get_api_xml('stock_availables', options)
     
-    if xml is None or xml.find('.//stock_available') is None:
+    # 1. Znajdź ID stanu magazynowego dla produktu
+    xml_list = get_api_xml('stock_availables', options)
+    
+    if xml_list is None or xml_list.find('.//stock_available') is None:
         print(f"    Błąd: Nie znaleziono 'stock_available' dla produktu {product_id}")
         return
 
-    stock_id = xml.find('.//stock_available/id').text
+    # UWAGA: To zadziała tylko dla produktów prostych (bez kombinacji)
+    stock_id = xml_list.find('.//stock_available/id').text
+    
+    # 2. Pobierz pełny XML dla tego konkretnego ID stanu
     stock_xml = get_api_xml(f'stock_availables/{stock_id}')
     
-    if stock_xml is None: return
+    if stock_xml is None: 
+        print(f"    Błąd: Nie udało się pobrać XML dla stock_id {stock_id}")
+        return
 
-    stock_xml.find('.//quantity').text = str(quantity)
-    
-    # Usuwamy pola tylko do odczytu
+    # 3. Znajdź główny węzeł <stock_available> w pobranym XML
+    stock_node = stock_xml.find('.//stock_available')
+    if stock_node is None:
+        print(f"    Błąd: Nie znaleziono węzła <stock_available> w odpowiedzi dla {stock_id}")
+        return
+
+    # 4. Zmodyfikuj ilość wewnątrz węzła <stock_available>
+    quantity_node = stock_node.find('.//quantity')
+    if quantity_node is not None:
+        quantity_node.text = str(quantity)
+    else:
+        print(f"    Błąd: Nie znaleziono węzła <quantity> dla {stock_id}")
+        return
+
+    # 5. Usuń pola tylko do odczytu z węzła <stock_available>
     for field in ['id_product_attribute', 'depends_on_stock', 'out_of_stock', 'shop_name']:
-        elem = stock_xml.find(f'.//{field}')
+        # Użyj './' aby szukać tylko bezpośrednich dzieci 'stock_node'
+        elem = stock_node.find(f'./{field}') 
         if elem is not None:
-            stock_xml.find('.').remove(elem)
+            stock_node.remove(elem) # Usuń 'elem' z jego rodzica, którym jest 'stock_node'
 
+    # 6. Wyślij zaktualizowany XML (cały dokument)
     put_api_xml(f'stock_availables/{stock_id}', ET.tostring(stock_xml))
 
 def upload_image(product_id, image_url):
@@ -218,10 +313,26 @@ def main():
         default_category_id, category_ids = get_category_id_by_path(item.get('kategoria_pelna_sciezka', ''))
         categories_xml = "".join(f"<category><id>{cid}</id></category>" for cid in category_ids)
 
-        # 4. Przygotuj pole manufacturer (tylko jeśli marka istnieje)
+        # 4. Przygotuj cechy produktu (features)
+        print("  Tworzenie cech produktu...")
+        features_xml = ""
+        if szczegoly:
+            feature_items = []
+            for key, value in szczegoly.items():
+                if value:
+                    feature_id = get_or_create_feature(key)
+                    if feature_id:
+                        value_id = get_or_create_feature_value(feature_id, value)
+                        if value_id:
+                            feature_items.append(f"<product_feature><id>{feature_id}</id><id_feature_value>{value_id}</id_feature_value></product_feature>")
+            
+            if feature_items:
+                features_xml = "".join(feature_items)
+
+        # 5. Przygotuj pole manufacturer (tylko jeśli marka istnieje)
         manufacturer_xml = f"<id_manufacturer>{manufacturer_id}</id_manufacturer>" if manufacturer_id != '0' else ""
         
-        # 5. Zbuduj XML produktu (łącząc wszystko)
+        # 6. Zbuduj XML produktu (łącząc wszystko)
         product_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <prestashop xmlns:xlink="http://www.w3.org/1999/xlink">
 <product>
@@ -241,6 +352,7 @@ def main():
     <id_shop_default>1</id_shop_default>
     <associations>
         <categories>{categories_xml}</categories>
+        <product_features>{features_xml}</product_features>
     </associations>
 </product>
 </prestashop>"""
@@ -254,7 +366,7 @@ def main():
             
         product_id = new_product_xml.find('.//product/id').text
         print(f"  Utworzono produkt. ID: {product_id}")
-
+        
         # 7. Ustaw stan magazynowy
         set_stock(product_id)
 

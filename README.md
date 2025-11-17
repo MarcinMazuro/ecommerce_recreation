@@ -126,18 +126,24 @@ Rezultaty zapisywane są w `app/data/` w formacie JSON z kodowaniem UTF-8.
 **Uruchomienie importu:**
 
 ```bash
-cd app/scraper
+cd app/data
 
 # Ustaw klucz API jako zmienną środowiskową
 export PRESTASHOP_API_KEY="TWOJ_KLUCZ_API"
 
-# Uruchom import
-python import_to_prestashop.py
+#Wyczysc dane jesli w bazie znajduja sie produkty lub kategorie
+python clean_prestashop.py
+
+# Uruchom import kategorii
+python import_categories.py
+
+# Uruchom import produktow
+python import_products.py
 ```
 
 Skrypt zaimportuje:
 - Wszystkie kategorie i podkategorie ze scrapowania
-- Produkty (możesz wybrać ile - domyślnie 50 dla testu)
+- Produkty 
 - Ceny, opisy, powiązania z kategoriami
 
 **Uwaga:** Import dużej liczby produktów może zająć kilka minut (API ma ograniczenia prędkości).
