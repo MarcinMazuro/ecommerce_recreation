@@ -131,11 +131,12 @@ Rezultaty zapisywane są w `app/data/` w formacie JSON z kodowaniem UTF-8.
 2. Stwórz plik .env
 
 3. Umieść w nim dane w taki sposob:
-# PrestaShop API Configuration
+   
 PRESTASHOP_URL=https://localhost:8443/api
-API_KEY=
 
-4. Jeśli chcesz zaimportować również zdjęcia, najpierw odpal skrypt w scraper/image_downloader.py (chwilowo, moze potem nie bedzie trzeba)
+API_KEY=kod
+
+5. Jeśli chcesz zaimportować również zdjęcia, najpierw odpal skrypt w scraper/image_downloader.py (chwilowo, moze potem nie bedzie trzeba)
 
 5.Odpal **python main.py** w folderze import
 
