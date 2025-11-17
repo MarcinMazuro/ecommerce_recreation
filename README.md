@@ -131,7 +131,6 @@ Rezultaty zapisywane są w `app/data/` w formacie JSON z kodowaniem UTF-8.
 2. Stwórz plik .env
 
 3. Umieść w nim dane w taki sposob:
-# PrestaShop API Configuration
 PRESTASHOP_URL=https://localhost:8443/api
 API_KEY=
 
