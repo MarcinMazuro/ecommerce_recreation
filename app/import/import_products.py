@@ -1,58 +1,16 @@
-import requests
 import json
 import xml.etree.ElementTree as ET
 import re
 from slugify import slugify
 import sys
-import io
+from prestashop_api import get_api_xml, post_api_xml, put_api_xml
 
-PRESTASHOP_URL = 'https://localhost:8443/api' 
-API_KEY = '9HI4BPPVSZCVULACXFQUYMABJUE74X5V'
 INPUT_FILE = '../data/products_with_details.json'
-
-
-session = requests.Session()
-session.auth = (API_KEY, '')
-session.auth = (API_KEY, '')
-session.verify = False 
 
 manufacturers_cache = {}
 categories_cache = {}
 features_cache = {}
 feature_values_cache = {}
-
-
-def get_api_xml(endpoint, options=None):
-    try:
-        url = f"{PRESTASHOP_URL}/{endpoint}"
-        response = session.get(url, params=options)
-        response.raise_for_status()
-        return ET.fromstring(response.content)
-    except requests.exceptions.RequestException as e:
-        print(f"Błąd GET {url}: {e}\nOdpowiedź: {e.response.content.decode()}", file=sys.stderr)
-        return None
-
-def post_api_xml(endpoint, xml_data):
-    try:
-        url = f"{PRESTASHOP_URL}/{endpoint}"
-        headers = {'Content-Type': 'application/xml'}
-        response = session.post(url, data=xml_data.encode('utf-8'))
-        response.raise_for_status()
-        return ET.fromstring(response.content)
-    except requests.exceptions.RequestException as e:
-        print(f"Błąd POST {url}: {e}\nOdpowiedź: {e.response.content.decode()}", file=sys.stderr)
-        return None
-
-def put_api_xml(endpoint, xml_data):
-    try:
-        url = f"{PRESTASHOP_URL}/{endpoint}"
-        headers = {'Content-Type': 'application/xml'}
-        response = session.put(url, data=xml_data) 
-        response.raise_for_status()
-        return True
-    except requests.exceptions.RequestException as e:
-        print(f"Błąd PUT {url}: {e}\nOdpowiedź: {e.response.content.decode()}", file=sys.stderr)
-        return False
 
 
 def clean_price(price_str):
