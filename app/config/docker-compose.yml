@@ -1,0 +1,41 @@
+
+services:
+  # 1. BAZA DANYCH (MariaDB)
+  db:
+    image: mariadb:10.6
+    container_name: ps178_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: secure_root_password
+      MYSQL_DATABASE: prestashop_db
+      MYSQL_USER: prestashop_user
+      MYSQL_PASSWORD: secure_user_password
+    volumes:
+      - ./db-data:/var/lib/mysql
+
+  # 2. APLIKACJA E-COMMERCE (PrestaShop 1.7.8)
+  prestashop:
+    image: prestashop/prestashop:1.7-apache 
+    container_name: ps178_app
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "8080:80"
+      - "8443:443"
+    environment:
+      DB_SERVER: db 
+      DB_NAME: prestashop_db
+      DB_USER: prestashop_user
+      DB_PASSWD: secure_user_password
+      PS_DOMAIN: "localhost:8443"
+      
+      PS_INSTALL_VERSION: 1.7.8.8 
+
+    volumes:
+      - ./html:/var/www/html
+      - ./ssl:/etc/apache2/ssl:ro
+      - ./apache-ssl.conf:/etc/apache2/sites-available/default-ssl.conf:ro
+    
+    command: >
+      bash -c "a2enmod ssl && a2ensite default-ssl && apache2-foreground"

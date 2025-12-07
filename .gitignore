@@ -1,0 +1,57 @@
+# Python
+.venv
+venv/
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+.pytest_cache/
+
+# PrestaShop - nie wersjonujemy plików sklepu, cache, uploadów
+app/config/html/
+app/config/db-data/
+app/config/ssl/*.key
+
+# Zezwalaj na customizacje (jeśli robicie własny theme/moduły)
+!app/config/html/themes/
+app/config/html/themes/classic/
+!app/config/html/themes/custom*/
+!app/config/html/modules/custom*/
+
+# Zezwalaj na zdjęcia produktów (wymagane)
+!app/config/html/img/p/
+!app/config/html/img/c/
+
+# Blokuj cache i logi
+app/config/html/var/cache/
+app/config/html/var/logs/
+app/config/html/upload/
+app/config/html/download/
+app/config/html/admin*/autoupgrade/
+app/config/html/admin*/backups/
+app/config/html/admin*/import/
+app/config/html/admin*/export/
+
+# Nie wersjonuj wrażliwych plików konfiguracyjnych (zawierają hasła)
+app/config/html/app/config/parameters.php
+app/config/html/config/settings.inc.php
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logi
+*.log
+
+# Tymczasowe pliki
+*.tmp
+*.bak
+.env
