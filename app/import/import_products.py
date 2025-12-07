@@ -19,6 +19,32 @@ def clean_price(price_str):
     price = re.sub(r'[^\d.]', '', price_str.replace(',', '.'))
     return f"{float(price):.2f}" if price else "0.00"
 
+def get_weight_from_name(name):
+    """
+    Wyciąga wagę z nazwy produktu (np. 'Yerba 500g' -> '0.500').
+    Domyślnie zwraca '0.000'.
+    """
+    if not name: return "0.000"
+    
+    # Zamień na małe litery i kropki zamiast przecinków dla łatwiejszego parsowania
+    text = name.lower().replace(',', '.')
+    
+    # 1. Sprawdź kilogramy (np. 1kg, 1.5 kg)
+    # \d+ - cyfry, (?:\.\d+)? - opcjonalna część ułamkowa, \s* - opcjonalna spacja
+    match_kg = re.search(r'(\d+(?:\.\d+)?)\s*kg', text)
+    if match_kg:
+        weight = float(match_kg.group(1))
+        return f"{weight:.3f}"
+
+    # 2. Sprawdź gramy (np. 500g, 500 g)
+    match_g = re.search(r'(\d+)\s*g', text)
+    if match_g:
+        weight_g = float(match_g.group(1))
+        weight_kg = weight_g / 1000.0
+        return f"{weight_kg:.3f}"
+
+    return "0.000"
+
 def format_html(text):
     """Formatuje tekst z \n na HTML. Słowa przed \n są pogrubiane."""
     if not text: return ""
@@ -214,10 +240,15 @@ def main():
             if feature_items:
                 features_xml = "".join(feature_items)
 
-        # 5. Przygotuj pole manufacturer (tylko jeśli marka istnieje)
+# 5. Przygotuj pole manufacturer
         manufacturer_xml = f"<id_manufacturer>{manufacturer_id}</id_manufacturer>" if manufacturer_id != '0' else ""
         
+        # --- NOWE: Oblicz wagę ---
+        weight = get_weight_from_name(name)
+        print(f"    Wykryta waga: {weight} kg")
+        
         # 6. Zbuduj XML produktu (łącząc wszystko)
+        # Dodano linię: <weight>{weight}</weight>
         product_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <prestashop xmlns:xlink="http://www.w3.org/1999/xlink">
 <product>
@@ -228,6 +259,7 @@ def main():
     {manufacturer_xml}
     <id_category_default>{default_category_id}</id_category_default>
     <price>{price}</price>
+    <weight>{weight}</weight>
     <id_tax_rules_group>1</id_tax_rules_group>
     <active>1</active>
     <available_for_order>1</available_for_order>
