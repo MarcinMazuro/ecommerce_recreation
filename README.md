@@ -158,3 +158,61 @@ cd app/tests
 python test_shop.py
 ```
 
+
+## 🔄 Synchronizacja Konfiguracji (Baza Danych)
+
+Ze względu na architekturę PrestaShop, konfiguracja (przeceny, produkty, kategorie) znajduje się w bazie danych. Aby zsynchronizować pracę używamy skryptów
+
+Lokalizacja skryptów: `app/config/`
+
+**Wymagania wstępne**
+
+Przed pierwszym użyciem nadaj skryptom uprawnienia do wykonywania:
+Bash
+```bash
+chmod +x app/config/export_database.sh app/config/import_database.sh
+```
+
+# 📤 Eksport (Zapisywanie zmian)
+
+Użyj tego, gdy skonfigurowałeś coś w sklepie (np. dodałeś przewoźnika) i chcesz wysłać to do repozytorium.
+
+    Wejdź do katalogu:
+Bash
+```bash
+cd app/config
+```
+Uruchom skrypt:
+
+```bash
+./export_database.sh
+```
+
+    Skrypt utworzy nowy plik .sql w folderze db-export z aktualną datą.
+
+
+# 📥 Import (Wczytywanie zmian)
+
+Użyj tego, gdy pobrałeś zmiany od kolegów (git pull) i chcesz zaktualizować swój sklep.
+
+    Wejdź do katalogu:
+```bash
+
+cd app/config
+```
+
+Wybierz plik .sql, który chcesz wgrać i uruchom:
+Bash
+```bash
+./import_database.sh db-export/NAZWA_PLIKU.sql
+```
+    (np. ./import_database.sh db-export/dump_2023-12-08_18-00.sql)
+
+**⚠️ Uwaga:** Import całkowicie nadpisuje Twoją lokalną bazę danych. Wszystkie import exporty wykonujemy z odpalonymi kontenerami. Możliwe jest, że trzeba też czyścić cashe (ja nie musiałem)
+
+W folderze db-export znajduje się testowy plik *test.sql*. Powinien on po zaimportowaniu stworzyć promocję dla produktu *Mantecol chałwa arachidowa 64g* (10%). 
+Możemy zobaczyć zniżki za pomocą komendy:
+
+```bash
+docker compose exec db mysql -u prestashop_user -psecure_user_password prestashop_db -e "SELECT id_product, reduction, reduction_type FROM ps_specific_price;"
+```
