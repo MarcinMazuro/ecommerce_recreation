@@ -141,6 +141,29 @@ def has_product_images(product_id):
         return False
 
 
+def get_product_images_count(product_id):
+    """
+    Pobiera liczbę zdjęć jakie produkt ma w PrestaShop.
+
+    Args:
+        product_id: ID produktu
+
+    Returns:
+        Liczba zdjęć (int), 0 jeśli brak lub błąd
+    """
+    try:
+        url = f"{PRESTASHOP_URL}/images/products/{product_id}"
+        response = session.get(url)
+
+        if response.status_code == 200:
+            xml = ET.fromstring(response.content)
+            images = xml.findall('.//image')
+            return len(images)
+        return 0
+    except Exception:
+        return 0
+
+
 def post_image(product_id, image_path):
     """
     Wgrywa zdjęcie produktu do PrestaShop.
@@ -153,12 +176,10 @@ def post_image(product_id, image_path):
         True jeśli sukces, False w przypadku błędu
     """
     try:
-        # Sprawdź czy plik istnieje
         if not os.path.exists(image_path):
             print(f"  Błąd: Plik nie istnieje: {image_path}", file=sys.stderr)
             return False
 
-        # Sprawdź rozmiar pliku
         file_size = os.path.getsize(image_path)
         if file_size == 0:
             print(f"  Błąd: Plik jest pusty: {image_path}", file=sys.stderr)
@@ -167,11 +188,9 @@ def post_image(product_id, image_path):
         url = f"{PRESTASHOP_URL}/images/products/{product_id}"
 
         with open(image_path, 'rb') as img_file:
-            # Użyj prostej nazwy bez znaków specjalnych
             files = {'image': ('product.jpg', img_file, 'image/jpeg')}
             response = session.post(url, files=files)
 
-            # Jeśli błąd, wyświetl szczegóły
             if response.status_code != 200:
                 print(f"  Błąd HTTP {response.status_code}: {response.text[:500]}", file=sys.stderr)
 

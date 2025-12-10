@@ -3,7 +3,7 @@ import os
 import sys
 from pathlib import Path
 import random
-from prestashop_api import get_api_xml, put_api_xml, post_image, has_product_images
+from prestashop_api import get_api_xml, put_api_xml, post_image, get_product_images_count
 
 INPUT_FILE = Path(__file__).parent.parent / 'data' / 'products_with_details.json'
 IMAGES_DIR = Path(__file__).parent.parent / 'data' / 'images'
@@ -98,28 +98,45 @@ def main():
         product_id_from_json = item.get('id_produktu', '')
 
         if product_id_from_json:
-            # Sprawdź czy produkt ma już zdjęcia
-            if has_product_images(product_id):
-                print("  ⊙ Produkt ma już zdjęcia, pomijanie wgrywania")
-                images_skipped += 1
-                continue
+            existing_images_count = get_product_images_count(product_id)
 
             matching_folders = [f for f in os.listdir(IMAGES_DIR)
                                 if f.startswith(f"{product_id_from_json}_")]
 
             if matching_folders:
                 product_folder = matching_folders[0]
-                image_path = IMAGES_DIR / product_folder / "product.jpg"
+                folder_path = IMAGES_DIR / product_folder
 
-                if os.path.exists(image_path):
-                    print(f"  Wgrywanie zdjęcia: {image_path}")
-                    if post_image(product_id, image_path):
-                        print("    ✓ Zdjęcie wgrane")
-                        images_uploaded += 1
+                available_images = []
+                if (folder_path / "product.jpg").exists():
+                    available_images.append(folder_path / "product.jpg")
+
+                for i in range(2, 5):
+                    img_path = folder_path / f"product_{i}.jpg"
+                    if img_path.exists():
+                        available_images.append(img_path)
                     else:
-                        print("    ✗ Błąd wgrywania zdjęcia")
+                        break
+
+                if not available_images:
+                    print(f"    Nie znaleziono żadnych zdjęć w folderze")
+                    continue
+
+                images_to_upload = available_images[existing_images_count:]
+
+                if not images_to_upload:
+                    print(f"  ⊙ Produkt ma już wszystkie zdjęcia ({existing_images_count}/{len(available_images)})")
+                    images_skipped += 1
                 else:
-                    print(f"    Nie znaleziono zdjęcia: {image_path}")
+                    print(f"  📷 Produkt ma {existing_images_count} zdjęć, dostępnych {len(available_images)}, wgrywam {len(images_to_upload)}")
+
+                    for image_path in images_to_upload:
+                        print(f"    Wgrywanie: {image_path.name}")
+                        if post_image(product_id, image_path):
+                            print(f"      ✓ Wgrano")
+                            images_uploaded += 1
+                        else:
+                            print(f"      ✗ Błąd wgrywania")
             else:
                 print(f"    Nie znaleziono folderu dla ID: {product_id_from_json}")
 

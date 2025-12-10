@@ -69,11 +69,13 @@ def scrape_product_details(product_url: str) -> Dict:
                     if marka_link:
                         product_data['marka'] = marka_link.get_text(strip=True)
 
-        fancybox_link = soup.find('a', class_='fancybox')
-        if fancybox_link and fancybox_link.get('href'):
-            main_image_url = fancybox_link.get('href')
-            if main_image_url:
-                product_data['zdjecia'].append(main_image_url)
+        # Pobierz wszystkie zdjęcia z klasy fancybox
+        fancybox_links = soup.find_all('a', class_='fancybox')
+        for fancybox_link in fancybox_links:
+            if fancybox_link and fancybox_link.get('href'):
+                image_url = fancybox_link.get('href')
+                if image_url and image_url not in product_data['zdjecia']:
+                    product_data['zdjecia'].append(image_url)
 
         picture_div = soup.find('div', class_='picture')
         if picture_div:

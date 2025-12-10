@@ -4,7 +4,8 @@
 Skrypt do pobierania zdjęć produktów w wysokiej rozdzielczości.
 
 Zgodny z wymaganiami:
-- Pobiera jedno zdjęcie produktu w wysokiej rozdzielczości
+- Pobiera wszystkie zdjęcia produktu w wysokiej rozdzielczości
+- Pierwsze zdjęcie zapisywane jako product.jpg, kolejne jako product_2.jpg, product_3.jpg itd.
 - Zapisuje zdjęcia umożliwiające powiększenie (nie miniatury)
 - Organizuje obrazy według kategorii i produktów
 """
@@ -32,7 +33,6 @@ class ImageDownloader:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Statystyki
         self.stats = {
             'total_products': 0,
             'downloaded_images': 0,
@@ -40,7 +40,6 @@ class ImageDownloader:
             'skipped_existing': 0
         }
         
-        # Headers do requestów
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
             'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
@@ -66,11 +65,8 @@ class ImageDownloader:
         variants = []
         
         if 'b_shop_' in base_url:
-            # Oryginał
             variants.append(base_url.replace('b_shop_', 'o_shop_'))
-            # Średni rozmiar
             variants.append(base_url.replace('b_shop_', 'shop_'))
-            # Miniatura jako ostatnia opcja
             variants.append(base_url)
         else:
             variants.append(base_url)
@@ -118,57 +114,79 @@ class ImageDownloader:
     
     def download_product_image(self, product: Dict, force: bool = False) -> bool:
         """
-        Pobiera zdjęcie produktu w najwyższej dostępnej rozdzielczości.
-        
+        Pobiera wszystkie zdjęcia produktu w najwyższej dostępnej rozdzielczości.
+
         Args:
             product: Dane produktu
             force: Czy nadpisać istniejące
             
         Returns:
-            True jeśli pobrano
+            True jeśli pobrano przynajmniej jedno zdjęcie
         """
         product_id = product.get('id_produktu', 'unknown')
         product_name = product.get('nazwa', 'unknown')
         
-        # Prosta struktura: images/id_nazwa/
         safe_name = self.sanitize_filename(product_name)
         
         product_dir = self.output_dir / f"{product_id}_{safe_name}"
         product_dir.mkdir(parents=True, exist_ok=True)
         
-        # URL zdjęcia
         image_urls = []
         if 'szczegoly_produktu' in product and 'zdjecia' in product['szczegoly_produktu']:
             image_urls = product['szczegoly_produktu']['zdjecia']
         
         if not image_urls:
-            print(f"⚠️  Brak zdjęć: {product_name}")
+            print(f" Brak zdjęć: {product_name}")
             return False
         
-        # Pobierz pierwsze zdjęcie
-        img_url = image_urls[0]
-        variants = self.get_high_res_url(img_url)
-        
-        ext = Path(urlparse(img_url).path).suffix or '.jpg'
-        output_path = product_dir / f"product{ext}"
-        
-        # Sprawdź czy istnieje
-        if output_path.exists() and not force:
-            file_size = output_path.stat().st_size
-            print(f"⊙ Już istnieje ({file_size / 1024:.1f} KB)")
-            self.stats['skipped_existing'] += 1
+        downloaded_count = 0
+        skipped_count = 0
+        failed_count = 0
+
+        for idx, img_url in enumerate(image_urls, start=1):
+            variants = self.get_high_res_url(img_url)
+
+            ext = Path(urlparse(img_url).path).suffix or '.jpg'
+            if idx == 1:
+                output_path = product_dir / f"product{ext}"
+            else:
+                output_path = product_dir / f"product_{idx}{ext}"
+
+            if output_path.exists() and not force:
+                file_size = output_path.stat().st_size
+                skipped_count += 1
+                self.stats['skipped_existing'] += 1
+                continue
+
+            success = False
+            for variant_url in variants:
+                if self.download_image(variant_url, output_path):
+                    if idx > 1:
+                        print(f"  ✓ Zdjęcie {idx}/{len(image_urls)}")
+                    downloaded_count += 1
+                    self.stats['downloaded_images'] += 1
+                    success = True
+                    break
+
+            if not success:
+                if idx > 1:
+                    print(f"  ✗ Nie udało się pobrać zdjęcia {idx}/{len(image_urls)}")
+                failed_count += 1
+                self.stats['failed_downloads'] += 1
+
+        if downloaded_count == 0 and skipped_count == 0:
+            print(f"⊙ Wszystkie zdjęcia już pobrane ({len(image_urls)} szt.)")
             return True
-        
-        # Próbuj pobrać od najwyższej rozdzielczości
-        for variant_url in variants:
-            if self.download_image(variant_url, output_path):
-                self.stats['downloaded_images'] += 1
-                return True
-        
-        print(f"✗ Nie udało się pobrać")
-        self.stats['failed_downloads'] += 1
-        return False
-    
+
+        if downloaded_count == 0 and failed_count > 0:
+            print(f"✗ Nie udało się pobrać żadnego nowego zdjęcia")
+            return False
+
+        if len(image_urls) > 1:
+            print(f"  📊 Pobrano: {downloaded_count}, Pominięto: {skipped_count}, Błędów: {failed_count}")
+
+        return True
+
     def process_products_file(self, json_file: str, max_products: Optional[int] = None,
                              force: bool = False):
         """
@@ -191,8 +209,8 @@ class ImageDownloader:
         
         self.stats['total_products'] = len(products)
         
-        print(f"📊 Produktów: {len(products)}")
-        print(f"📁 Katalog: {self.output_dir.absolute()}\n")
+        print(f" Produktów: {len(products)}")
+        print(f" Katalog: {self.output_dir.absolute()}\n")
         
         for idx, product in enumerate(products, start=1):
             product_name = product.get('nazwa', 'unknown')
