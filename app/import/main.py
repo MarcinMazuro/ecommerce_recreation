@@ -57,7 +57,7 @@ Dostępne opcje:
         
         if not script_path.exists():
             error_msg = f"Błąd: Nie znaleziono skryptu {script_name}"
-            print(f"❌ {error_msg}")
+            print(f"  {error_msg}")
             self.stats['errors'].append(error_msg)
             return False
         
@@ -79,11 +79,11 @@ Dostępne opcje:
                 return False
                 
         except KeyboardInterrupt:
-            print(f"\n\n⚠️  Przerwano przez użytkownika")
+            print(f"\n\n   Przerwano przez użytkownika")
             return False
         except Exception as e:
             error_msg = f"{description} - WYJĄTEK: {str(e)}"
-            print(f"\n❌ {error_msg}")
+            print(f"\n  {error_msg}")
             self.stats['errors'].append(error_msg)
             return False
 
@@ -92,7 +92,7 @@ Dostępne opcje:
         """Czyści bazę danych PrestaShop."""
         self.print_header("CZYSZCZENIE BAZY DANYCH")
         
-        print("⚠️  UWAGA: Ta operacja usunie:")
+        print("    UWAGA: Ta operacja usunie:")
         print("  • Wszystkie produkty")
         print("  • Wszystkie kategorie (oprócz domyślnych)")
         print("  • Wszystkie producerów")
@@ -139,19 +139,15 @@ Dostępne opcje:
         
         self.stats['start_time'] = time.time()
         
-        # Krok 1: Czyszczenie (opcjonalne)
         self.clean_database()
-        # Krok 2: Kategorie
         self.import_categories()
         print("\n\n")
         self.import_products()
-        # Krok 4: Stocki i zdjęcia
         print("\n\n")
         self.update_stocks_images()
         
         self.stats['end_time'] = time.time()
         
-        # Podsumowanie
         print("\n\n")
         self.show_summary()
     
@@ -163,7 +159,7 @@ Dostępne opcje:
             duration = self.stats['end_time'] - self.stats['start_time']
             minutes = int(duration // 60)
             seconds = int(duration % 60)
-            print(f"⏱️  Czas trwania: {minutes}m {seconds}s\n")
+            print(f"Czas trwania: {minutes}m {seconds}s\n")
         
         print("Status wykonanych operacji:\n")
         
@@ -180,7 +176,7 @@ Dostępne opcje:
             print(f"  {icon} {name:.<30} {status_text}")
         
         if self.stats['errors']:
-            print(f"\n⚠️  Wystąpiło błędów: {len(self.stats['errors'])}")
+            print(f"\n Wystąpiło błędów: {len(self.stats['errors'])}")
             for error in self.stats['errors']:
                 print(f"  • {error}")
         else:
@@ -201,7 +197,7 @@ Dostępne opcje:
                 choice = input("Wybierz opcję [0-1]: ").strip()
                 
                 if choice == '0':
-                    print("\n👋 Do widzenia!\n")
+                    print("\nDo widzenia!\n")
                     break
                     
                 elif choice == '1':
@@ -209,14 +205,14 @@ Dostępne opcje:
                     self.wait_for_user()
                     
                 else:
-                    print("\n❌ Nieprawidłowa opcja. Wybierz liczbę od 0 do 6.")
+                    print("\nNieprawidłowa opcja. Wybierz liczbę od 0 do 6.")
                     time.sleep(2)
                     
             except KeyboardInterrupt:
                 print("\n\n👋 Przerwano. Do widzenia!\n")
                 break
             except Exception as e:
-                print(f"\n❌ Błąd: {e}")
+                print(f"\nBłąd: {e}")
                 self.wait_for_user()
 
 

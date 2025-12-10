@@ -44,26 +44,21 @@ def scrape_product_details(product_url: str) -> Dict:
             'szczegoly': {}
         }
 
-        # Nazwa produktu - <h1>
         h1_tag = soup.find('h1')
         if h1_tag:
             product_data['nazwa'] = h1_tag.get_text(strip=True)
 
-        # Cena - <div class="promoprice">
         price_div = soup.find('div', class_='promoprice')
         if price_div:
             product_data['cena'] = price_div.get_text(strip=True)
 
-        # Breadcrumbs (kategoria) - <h3 class="breadcrumbs">
         breadcrumbs = soup.find('h3', class_='breadcrumbs')
         if breadcrumbs:
-            # Pobierz linki z breadcrumbs
             links = breadcrumbs.find_all('a')
             if links:
                 categories = [link.get_text(strip=True) for link in links]
                 product_data['kategoria'] = ' > '.join(categories)
 
-        # Marka - text "Marka:" followed by <strong><a>
         marka_text = soup.find(string=re.compile(r'Marka:'))
         if marka_text:
             parent = marka_text.parent
@@ -74,37 +69,28 @@ def scrape_product_details(product_url: str) -> Dict:
                     if marka_link:
                         product_data['marka'] = marka_link.get_text(strip=True)
 
-        # Zdjęcia - szukamy zdjęć w wysokiej rozdzielczości
-        # 1. Główne zdjęcie z fancybox (prefix "b_" = big)
         fancybox_link = soup.find('a', class_='fancybox')
         if fancybox_link and fancybox_link.get('href'):
             main_image_url = fancybox_link.get('href')
             if main_image_url:
                 product_data['zdjecia'].append(main_image_url)
 
-        # 2. Szukamy dodatkowych obrazów - sprawdzamy czy są inne obrazy w galerii
-        # Niektóre produkty mogą mieć wiele zdjęć
         picture_div = soup.find('div', class_='picture')
         if picture_div:
-            # Szukamy wszystkich linków do obrazów
             img_links = picture_div.find_all('a', href=re.compile(r'\.jpg|\.png|\.jpeg', re.IGNORECASE))
             for link in img_links:
                 img_url = link.get('href')
                 if img_url and img_url not in product_data['zdjecia']:
-                    # Upewniamy się, że to zdjęcie wysokiej rozdzielczości (z "b_" w nazwie)
                     if '/b_' in img_url or img_url.endswith('.jpg') or img_url.endswith('.png'):
                         product_data['zdjecia'].append(img_url)
 
 
 
-        # Opis - <div class="moredesc">
         moredesc_div = soup.find('div', class_='moredesc')
         if moredesc_div:
-            # Pobierz cały tekst, zachowując formatowanie
             description_text = moredesc_div.get_text(separator='\n', strip=True)
             product_data['opis'] = description_text
 
-        # Szczegóły produktu - tabela z szczegółami
         details_table = soup.find('table')
         if details_table:
             rows = details_table.find_all('tr')
@@ -137,7 +123,6 @@ def scrape_all_products(products_file: str, output_file: str, delay: float = 1.0
     """
     import time
 
-    # Wczytaj listę produktów
     try:
         with open(products_file, 'r', encoding='utf-8') as f:
             products = json.load(f)
@@ -147,8 +132,6 @@ def scrape_all_products(products_file: str, output_file: str, delay: float = 1.0
 
     print(f"Znaleziono {len(products)} wpisów w pliku products.json")
 
-    # Deduplikacja produktów na podstawie URL
-    # Ten sam produkt może być w wielu kategoriach
     unique_products = {}
     for product in products:
         url = product.get('url_produktu')
@@ -173,7 +156,6 @@ def scrape_all_products(products_file: str, output_file: str, delay: float = 1.0
             })
             continue
 
-        # Pokaż postęp
         if i % 50 == 0 or i == 1:
             elapsed = time.time() - start_time
             rate = i / elapsed if elapsed > 0 else 0
@@ -187,10 +169,9 @@ def scrape_all_products(products_file: str, output_file: str, delay: float = 1.0
             details = scrape_product_details(product_url)
 
             if details and details.get('nazwa'):
-                # Połącz podstawowe dane z szczegółami
                 enriched_product = {
-                    **product,  # Podstawowe dane z products.json
-                    'szczegoly_produktu': details  # Szczegółowe dane ze strony
+                    **product,
+                    'szczegoly_produktu': details
                 }
                 enriched_products.append(enriched_product)
                 print(f"    ✓ Pobrano szczegóły ({len(details.get('zdjecia', []))} zdjęć)")
@@ -201,7 +182,6 @@ def scrape_all_products(products_file: str, output_file: str, delay: float = 1.0
                     'error': 'Brak danych ze strony'
                 })
 
-            # Opóźnienie między requestami
             if i < len(products):
                 time.sleep(delay)
 
@@ -212,12 +192,10 @@ def scrape_all_products(products_file: str, output_file: str, delay: float = 1.0
                 'error': str(e)
             })
 
-    # Zapisz wyniki
     print(f"\n=== Podsumowanie ===")
     print(f"Pomyślnie przetworzono: {len(enriched_products)}/{len(products)} produktów")
     print(f"Niepowodzenia: {len(failed_products)}")
 
-    # Zapisz produkty z szczegółami
     try:
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(enriched_products, f, ensure_ascii=False, indent=2)
@@ -236,17 +214,15 @@ def main():
     products_file = script_dir.parent / "data" / "products.json"
     output_file = script_dir.parent / "data" / "products_with_details.json"
 
-    # Sprawdź czy plik products.json istnieje
     if not products_file.exists():
         print(f"Błąd: Nie znaleziono pliku {products_file}")
         print("Najpierw uruchom product_scraper.py aby pobrać listę produktów")
         return
 
-    # Uruchom scrapowanie
     scrape_all_products(
         products_file=str(products_file),
         output_file=str(output_file),
-        delay=1.0,  # 1.5 sekundy między requestami
+        delay=1.0,  # 1.0 sekundy między requestami
     )
 
 

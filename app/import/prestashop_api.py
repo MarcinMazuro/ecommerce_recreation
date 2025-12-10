@@ -9,23 +9,19 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Załaduj zmienne środowiskowe z .env
 env_path = Path(__file__).parent / '.env'
 load_dotenv(env_path)
 
-# Konfiguracja z .env
 PRESTASHOP_URL = os.getenv('PRESTASHOP_URL', 'https://localhost:8443/api')
 API_KEY = os.getenv('API_KEY')
 
 if not API_KEY:
     raise ValueError("Brak API_KEY w pliku .env!")
 
-# Sesja globalna
 session = requests.Session()
 session.auth = (API_KEY, '')
 session.verify = False
 
-# Wyłącz ostrzeżenia SSL
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -69,11 +65,10 @@ def post_api_xml(endpoint, xml_data):
         response.raise_for_status()
         return ET.fromstring(response.content)
     except requests.exceptions.RequestException as e:
-        # Sprawdź czy to ignorowalny błąd PHP Notice #8
         if e.response is not None:
             response_text = e.response.content.decode()
             if 'PHP Notice #8' in response_text and 'Trying to access array offset on value of type bool' in response_text:
-                print(f"  Ignorowanie błędu PHP Notice #8 (znany problem PrestaShop)", file=sys.stderr)
+                print(f"  Ignorowanie błędu PHP Notice #8", file=sys.stderr)
                 try:
                     return ET.fromstring(e.response.content)
                 except:
@@ -122,6 +117,30 @@ def delete_api_resource(endpoint, resource_id):
         return False
 
 
+def has_product_images(product_id):
+    """
+    Sprawdza czy produkt ma już wgrane zdjęcia.
+
+    Args:
+        product_id: ID produktu
+
+    Returns:
+        True jeśli produkt ma zdjęcia, False w przeciwnym razie
+    """
+    try:
+        url = f"{PRESTASHOP_URL}/images/products/{product_id}"
+        response = session.get(url)
+
+        if response.status_code == 200:
+            # Parsuj XML aby sprawdzić czy są jakieś zdjęcia
+            xml = ET.fromstring(response.content)
+            images = xml.findall('.//image')
+            return len(images) > 0
+        return False
+    except Exception:
+        return False
+
+
 def post_image(product_id, image_path):
     """
     Wgrywa zdjęcie produktu do PrestaShop.
@@ -134,14 +153,37 @@ def post_image(product_id, image_path):
         True jeśli sukces, False w przypadku błędu
     """
     try:
+        # Sprawdź czy plik istnieje
+        if not os.path.exists(image_path):
+            print(f"  Błąd: Plik nie istnieje: {image_path}", file=sys.stderr)
+            return False
+
+        # Sprawdź rozmiar pliku
+        file_size = os.path.getsize(image_path)
+        if file_size == 0:
+            print(f"  Błąd: Plik jest pusty: {image_path}", file=sys.stderr)
+            return False
+
         url = f"{PRESTASHOP_URL}/images/products/{product_id}"
+
         with open(image_path, 'rb') as img_file:
-            files = {'image': (os.path.basename(image_path), img_file, 'image/jpeg')}
+            # Użyj prostej nazwy bez znaków specjalnych
+            files = {'image': ('product.jpg', img_file, 'image/jpeg')}
             response = session.post(url, files=files)
+
+            # Jeśli błąd, wyświetl szczegóły
+            if response.status_code != 200:
+                print(f"  Błąd HTTP {response.status_code}: {response.text[:500]}", file=sys.stderr)
+
             response.raise_for_status()
         return True
-    except Exception as e:
+    except requests.exceptions.RequestException as e:
         print(f"  Błąd wgrywania obrazu: {e}", file=sys.stderr)
+        if hasattr(e, 'response') and e.response is not None:
+            print(f"  Odpowiedź serwera: {e.response.text[:500]}", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"  Nieoczekiwany błąd: {e}", file=sys.stderr)
         return False
 
 
