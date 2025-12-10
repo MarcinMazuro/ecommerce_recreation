@@ -25,13 +25,7 @@
       Promocje
     </a>
 
-    {* Opcjonalnie: Jeśli w panelu podasz numer telefonu, wyświetli się on na końcu *}
-    {if $contact_infos.phone}
-       <span style="margin: 0 5px; color: #ccc; font-size: 11px;">|</span>
-       <span style="color: #666; font-size: 11px;">
-         Tel: {$contact_infos.phone}
-       </span>
-    {/if}
+
 
   </div>
 </div>
