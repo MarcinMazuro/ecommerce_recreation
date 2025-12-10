@@ -15,8 +15,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 # --- KONFIGURACJA ---
 BASE_URL = "https://localhost:8443/"  # Upewnij się, że URL jest poprawny
 CATEGORY_URLS = [
-    "https://localhost:8443/694-yerba-klasyczna",
-    "https://localhost:8443/696-chimarrao"
+    "https://localhost:8443/809-yerba-klasyczna",
+    "https://localhost:8443/811-chimarrao"
 ]
 SEARCH_TERM = "Algarrobo Tostado Cometa" # Upewnij się, że ten produkt istnieje
 
