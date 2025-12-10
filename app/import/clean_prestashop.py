@@ -16,7 +16,7 @@ def delete_all_products():
     
     xml = get_api_xml('products')
     if xml is None:
-        print("❌ Nie udało się pobrać listy produktów")
+        print(" Nie udało się pobrać listy produktów")
         return 0
     
     products = xml.findall('.//product')
@@ -43,7 +43,7 @@ def delete_all_manufacturers():
     
     xml = get_api_xml('manufacturers')
     if xml is None:
-        print("❌ Nie udało się pobrać listy producentów")
+        print(" Nie udało się pobrać listy producentów")
         return 0
     
     manufacturers = xml.findall('.//manufacturer')
@@ -70,7 +70,7 @@ def delete_custom_categories():
     
     xml = get_api_xml('categories')
     if xml is None:
-        print("❌ Nie udało się pobrać listy kategorii")
+        print(" Nie udało się pobrać listy kategorii")
         return 0
     
     all_categories = xml.findall('.//category')
@@ -81,7 +81,6 @@ def delete_custom_categories():
         print("  ✓ Brak kategorii do usunięcia")
         return 0
     
-    # Sortuj od najwyższych ID (usuń dzieci przed rodzicami)
     categories.sort(key=lambda c: int(c.get('id')), reverse=True)
     
     deleted = 0
@@ -101,7 +100,7 @@ def delete_all_features():
     
     xml = get_api_xml('product_features')
     if xml is None:
-        print("❌ Nie udało się pobrać listy cech")
+        print(" Nie udało się pobrać listy cech")
         return 0
     
     features = xml.findall('.//product_feature')
@@ -127,15 +126,14 @@ def main():
     print("  CZYSZCZENIE BAZY DANYCH PRESTASHOP")
     print("="*60)
     
-    # Sprawdź połączenie
     if not test_connection():
-        print("\n❌ Nie można połączyć się z PrestaShop!")
+        print("\n Nie można połączyć się z PrestaShop!")
         return 1
     
     print("\n✓ Połączenie z API: OK")
     print(f"✓ Adres: {PRESTASHOP_URL}")
     
-    print("\n⚠️  Zostaną usunięte:")
+    print("\n Zostaną usunięte:")
     print("  • Wszystkie produkty")
     print("  • Wszyscy producenci")
     print("  • Wszystkie kategorie (oprócz Root i Home)")
@@ -158,5 +156,5 @@ if __name__ == "__main__":
     try:
         exit(main())
     except KeyboardInterrupt:
-        print("\n\n⚠️  Przerwano przez użytkownika")
+        print("\n\n Przerwano przez użytkownika")
         exit(130)

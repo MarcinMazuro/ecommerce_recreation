@@ -253,7 +253,7 @@ Przykłady:
     args = parser.parse_args()
     
     if not os.path.exists(args.input):
-        print(f"❌ Błąd: Plik {args.input} nie istnieje!")
+        print(f" Błąd: Plik {args.input} nie istnieje!")
         return 1
     
     downloader = ImageDownloader(output_dir=args.output)
@@ -262,11 +262,11 @@ Przykłady:
         downloader.process_products_file(args.input, args.max_products, args.force)
         return 0
     except KeyboardInterrupt:
-        print("\n\n⚠️  Przerwano")
+        print("\n\n Przerwano")
         downloader.print_stats()
         return 130
     except Exception as e:
-        print(f"\n❌ Błąd: {e}")
+        print(f"\n Błąd: {e}")
         return 1
 
 

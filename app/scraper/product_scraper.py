@@ -51,7 +51,6 @@ def scrape_products_from_category(category_url):
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # Znajdź wszystkie produkty - są w div class="shop-item"
         product_items = soup.find_all('div', class_='shop-item')
 
         print(f"Znaleziono {len(product_items)} produktów na stronie")
@@ -60,27 +59,22 @@ def scrape_products_from_category(category_url):
             try:
                 product_data = {}
 
-                # Główny link produktu - drugi link <a> który zawiera nazwę, opis i cenę
                 main_link = item.find('a', href=True, title=False)
                 if main_link:
                     product_data['url_produktu'] = main_link.get('href')
 
-                    # Nazwa produktu - pierwszy tekst w linku (jeśli nie mamy z title)
                     if 'nazwa' not in product_data:
-                        # Pobierz bezpośrednią zawartość tekstową (bez potomków)
                         for content in main_link.contents:
                             if isinstance(content, str) and content.strip():
                                 product_data['nazwa'] = content.strip()
                                 break
 
-                # ID produktu - z formularza dodawania do koszyka
                 form = item.find('form')
                 if form:
                     id_input = form.find('input', {'name': 'id'})
                     if id_input:
                         product_data['id_produktu'] = id_input.get('value')
 
-                # Dodaj produkt do listy tylko jeśli ma nazwę
                 if product_data.get('nazwa'):
                     products.append(product_data)
 
@@ -95,7 +89,6 @@ def scrape_products_from_category(category_url):
 
 
 if __name__ == '__main__':
-    # Wczytaj kategorie i scrapuj produkty
     categories_path = Path(__file__).resolve().parent.parent / 'data' / 'categories.json'
 
     if not categories_path.exists():
@@ -105,7 +98,6 @@ if __name__ == '__main__':
     with open(categories_path, 'r', encoding='utf-8') as f:
         categories_data = json.load(f)
 
-    # Zbierz wszystkie kategorie i podkategorie
     all_categories = collect_all_categories(categories_data)
 
     print(f"\n{'='*60}")
@@ -121,7 +113,6 @@ if __name__ == '__main__':
 
         products = scrape_products_from_category(category['url'])
 
-        # Dodaj informację o kategorii do każdego produktu
         for product in products:
             product['kategoria'] = category['name']
             product['kategoria_pelna_sciezka'] = category['full_path']
@@ -130,10 +121,8 @@ if __name__ == '__main__':
         all_products.extend(products)
         print(f"Zescrapowano {len(products)} produktów z tej kategorii")
 
-        # Opóźnienie między kategoriami
         time.sleep(1)
 
-    # Zapisz wszystkie produkty do pliku JSON
     output_path = Path(__file__).resolve().parent.parent / 'data' / 'products.json'
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(all_products, f, indent=2, ensure_ascii=False)
@@ -144,7 +133,6 @@ if __name__ == '__main__':
     print(f"✓ Dane zapisano do: {output_path}")
     print(f"{'='*60}")
 
-    # Pokaż przykładowe produkty
     if all_products:
         print("\nPrzykładowy produkt:")
         print(json.dumps(all_products[0], indent=2, ensure_ascii=False))

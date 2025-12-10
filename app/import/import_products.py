@@ -26,17 +26,13 @@ def get_weight_from_name(name):
     """
     if not name: return "0.000"
     
-    # Zamień na małe litery i kropki zamiast przecinków dla łatwiejszego parsowania
     text = name.lower().replace(',', '.')
     
-    # 1. Sprawdź kilogramy (np. 1kg, 1.5 kg)
-    # \d+ - cyfry, (?:\.\d+)? - opcjonalna część ułamkowa, \s* - opcjonalna spacja
     match_kg = re.search(r'(\d+(?:\.\d+)?)\s*kg', text)
     if match_kg:
         weight = float(match_kg.group(1))
         return f"{weight:.3f}"
 
-    # 2. Sprawdź gramy (np. 500g, 500 g)
     match_g = re.search(r'(\d+)\s*g', text)
     if match_g:
         weight_g = float(match_g.group(1))
@@ -55,7 +51,6 @@ def format_html(text):
     text = text.replace('\n', ' ')
     text = text.replace('|||PARAGRAPH|||', '</p><p>')
     
-    # Dodaj <br> przed każdym pogrubieniem (oprócz pierwszego)
     text = re.sub(r'([a-ząćęłńóśźż\.]) <strong>', r'\1<br><strong>', text)
     
     return f"<p>{text}</p>"
@@ -178,7 +173,6 @@ def get_or_create_feature_value(feature_id, value):
 
 
 
-# --- GŁÓWNA FUNKCJA ---
 
 def main():
     print("Rozpoczynanie importu produktów...")
@@ -197,7 +191,7 @@ def main():
         name = item.get('nazwa')
         print(f"\n--- Przetwarzanie produktu {i+1}/{len(data)}: {name} ---")
         
-        # 1. Sprawdź, czy produkt już istnieje
+        # 1. Sprawdź  czy produkt już istnieje
         options = {'filter[name]': name, 'display': 'full'}
         xml = get_api_xml('products', options)
         if xml is not None and xml.find('.//product') is not None:
@@ -205,7 +199,7 @@ def main():
             continue
 
         # 2. Zbierz dane
-        # Cena w JSON to cena BRUTTO - PrestaShop potrzebuje NETTO (podziel przez 1.23)
+        # Cena w JSON to cena BRUTTO - PrestaShop potrzebuje NETTO
         cena_brutto = float(clean_price(details.get('cena', '0.00')))
         price = f"{(cena_brutto / 1.23):.2f}"  # Przelicz na netto
         
@@ -224,7 +218,7 @@ def main():
         default_category_id, category_ids = get_category_id_by_path(item.get('kategoria_pelna_sciezka', ''))
         categories_xml = "".join(f"<category><id>{cid}</id></category>" for cid in category_ids)
 
-        # 4. Przygotuj cechy produktu (features)
+        # 4. Przygotuj cechy produktu
         print("  Tworzenie cech produktu...")
         features_xml = ""
         if szczegoly:
@@ -240,15 +234,13 @@ def main():
             if feature_items:
                 features_xml = "".join(feature_items)
 
-# 5. Przygotuj pole manufacturer
+#     5. Przygotuj pole manufacturer
         manufacturer_xml = f"<id_manufacturer>{manufacturer_id}</id_manufacturer>" if manufacturer_id != '0' else ""
         
-        # --- NOWE: Oblicz wagę ---
+        # --- Oblicz wagę ---
         weight = get_weight_from_name(name)
         print(f"    Wykryta waga: {weight} kg")
         
-        # 6. Zbuduj XML produktu (łącząc wszystko)
-        # Dodano linię: <weight>{weight}</weight>
         product_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <prestashop xmlns:xlink="http://www.w3.org/1999/xlink">
 <product>
@@ -274,7 +266,6 @@ def main():
 </product>
 </prestashop>"""
         
-        # 6. Utwórz produkt
         print("  Tworzenie produktu...")
         new_product_xml = post_api_xml('products', product_xml)
         if new_product_xml is None:
