@@ -164,6 +164,61 @@ def get_product_images_count(product_id):
         return 0
 
 
+def get_product_image_ids(product_id):
+    """
+    Pobiera listę ID zdjęć dla danego produktu.
+
+    Args:
+        product_id: ID produktu
+
+    Returns:
+        Lista ID zdjęć (list of str), pusta lista jeśli brak lub błąd
+    """
+    try:
+        url = f"{PRESTASHOP_URL}/images/products/{product_id}"
+        response = session.get(url)
+
+        if response.status_code == 200:
+            xml = ET.fromstring(response.content)
+            ids = []
+            # Szukaj węzłów declination (to są poszczególne zdjęcia)
+            for node in xml.findall('.//declination'):
+                img_id = node.get('id')
+                if img_id:
+                    ids.append(img_id)
+            # Jeśli nie ma declination, sprawdź czy są węzły image
+            if not ids:
+                for node in xml.findall('.//image'):
+                    img_id = node.get('id')
+                    if img_id:
+                        ids.append(img_id)
+            return ids
+        return []
+    except Exception as e:
+        print(f"  Błąd pobierania ID zdjęć: {e}", file=sys.stderr)
+        return []
+
+
+def delete_image(product_id, image_id):
+    """
+    Usuwa zdjęcie produktu z PrestaShop.
+    
+    Args:
+        product_id: ID produktu
+        image_id: ID zdjęcia do usunięcia
+        
+    Returns:
+        True jeśli sukces, False w przypadku błędu
+    """
+    try:
+        url = f"{PRESTASHOP_URL}/images/products/{product_id}/{image_id}"
+        response = session.delete(url)
+        return response.status_code in [200, 204]
+    except requests.exceptions.RequestException as e:
+        print(f"  Błąd usuwania obrazu: {e}", file=sys.stderr)
+        return False
+
+
 def post_image(product_id, image_path):
     """
     Wgrywa zdjęcie produktu do PrestaShop.

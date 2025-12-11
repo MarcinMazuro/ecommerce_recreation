@@ -3,7 +3,7 @@ import os
 import sys
 from pathlib import Path
 import random
-from prestashop_api import get_api_xml, put_api_xml, post_image, get_product_images_count
+from prestashop_api import get_api_xml, put_api_xml, post_image, get_product_image_ids, delete_image
 
 INPUT_FILE = Path(__file__).parent.parent / 'data' / 'products_with_details.json'
 IMAGES_DIR = Path(__file__).parent.parent / 'data' / 'images'
@@ -73,6 +73,7 @@ def main():
 
     print(f"Znaleziono {len(products_map)} produktów w PrestaShop")
     images_uploaded = 0
+    images_deleted = 0
     images_skipped = 0
     for i, item in enumerate(data):
         name = item.get('nazwa')
@@ -98,7 +99,9 @@ def main():
         product_id_from_json = item.get('id_produktu', '')
 
         if product_id_from_json:
-            existing_images_count = get_product_images_count(product_id)
+            current_image_ids = get_product_image_ids(product_id)
+            existing_images_count = len(current_image_ids)
+            
 
             matching_folders = [f for f in os.listdir(IMAGES_DIR)
                                 if f.startswith(f"{product_id_from_json}_")]
@@ -122,13 +125,39 @@ def main():
                     print(f"    Nie znaleziono żadnych zdjęć w folderze")
                     continue
 
+                # Sprawdź czy są nadmiarowe zdjęcia i usuń je
+                if existing_images_count > len(available_images):
+                    print(f" Wykryto nadmiarowe zdjęcia ({existing_images_count} > {len(available_images)}). Usuwanie...")
+                    
+                    # Sortuj ID zdjęć aby zachować pierwsze
+                    current_image_ids.sort(key=lambda x: int(x))
+                    
+                    images_to_keep_count = len(available_images)
+                    images_to_delete = current_image_ids[images_to_keep_count:]
+                    
+                    print(f"  Debug: Zachowuję pierwsze {images_to_keep_count} zdjęć, usuwam: {images_to_delete}")
+                    
+                    for img_id in images_to_delete:
+                        print(f"    Usuwanie zdjęcia ID: {img_id}")
+                        if delete_image(product_id, img_id):
+                            print("      ✓ Usunięto")
+                            images_deleted += 1
+                        else:
+                            print("      ✗ Błąd usuwania")
+                    
+                    # Po usunięciu nadmiarowych, sprawdź czy teraz liczba się zgadza
+                    existing_images_count = images_to_keep_count
+                    print(f"  Produkt ma teraz poprawną liczbę zdjęć ({existing_images_count})")
+                    images_skipped += 1
+                    continue
+
                 images_to_upload = available_images[existing_images_count:]
 
                 if not images_to_upload:
-                    print(f"  ⊙ Produkt ma już wszystkie zdjęcia ({existing_images_count}/{len(available_images)})")
+                    print(f"  Produkt ma już wszystkie zdjęcia ({existing_images_count}/{len(available_images)})")
                     images_skipped += 1
                 else:
-                    print(f"  📷 Produkt ma {existing_images_count} zdjęć, dostępnych {len(available_images)}, wgrywam {len(images_to_upload)}")
+                    print(f"  Produkt ma {existing_images_count} zdjęć, dostępnych {len(available_images)}, wgrywam {len(images_to_upload)}")
 
                     for image_path in images_to_upload:
                         print(f"    Wgrywanie: {image_path.name}")
@@ -142,6 +171,7 @@ def main():
 
     print("\n--- Zakończono aktualizację ---")
     print(f"Łącznie wgrano zdjęć: {images_uploaded}")
+    print(f"Łącznie usunięto zdjęć: {images_deleted}")
     print(f"Pominięto produktów ze zdjęciami: {images_skipped}")
 
 
