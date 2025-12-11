@@ -1,0 +1,307 @@
+/* ZWIĘKSZENIE SZEROKOŚCI STRONY */
+@media (min-width: 992px) {
+  /* Nadpisujemy domyślny kontener Bootstrapa */
+  .container {
+    max-width: 1600px !important;
+    width: 85%;
+  }
+
+  #carousel .carousel-inner {
+    height: auto; 
+  }
+}
+
+/* 1. NAGŁÓWEK GÓRNY (LOGO - SZUKANIE - KOSZYK) */
+
+#header .header-top .row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Zmienione na flex-start, żeby nie rozrzucało */
+    flex-wrap: nowrap;
+    padding-bottom: 10px;
+}
+
+/* LOGO */
+#header .header-top #_desktop_logo {
+    width: auto; 
+    min-width: 200px;
+    flex-shrink: 0;
+    padding-left: 15px;
+}
+
+/* KONTENER PRAWEJ STRONY (Szukanie + Koszyk) */
+#header .header-top .header-top-right {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+/* WYSZUKIWARKA */
+
+#search_widget {
+    flex-grow: 0 !important;
+    width: 100% !important;
+    max-width: 550px !important;
+    margin-left: 30px !important;
+    margin-right: auto !important;
+}
+
+#search_widget form {
+    position: relative !important;
+    width: 100% !important;
+    display: block !important;
+}
+
+/* POLE TEKSTOWE */
+#search_widget form input[type="text"] {
+    position: relative !important;
+    background: #fff !important;
+    border: 1px solid #d6d6d6 !important;
+    height: 40px !important;
+    width: 100% !important;
+    
+    /* TO NAPRAWIA NAKŁADANIE SIĘ TEKSTU: */
+    box-sizing: border-box !important; 
+    padding-left: 15px !important;
+    /* Margines wewnątrz pola, żeby tekst nie wjechał pod guzik */
+    padding-right: 60px !important; 
+    
+    font-style: italic !important;
+    color: #888 !important;
+    border-radius: 5px !important;
+    z-index: 1 !important; /* Tekst niżej niż przycisk */
+}
+
+/* MENU GŁÓWNE (Pasek poniżej z separatorami)*/
+
+.header-menu-container {
+    background-color: #333333;
+    margin-top: 15px;
+    position: relative;
+    z-index: 999;
+}
+
+/* Tło na pełną szerokość */
+.header-menu-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100vw;
+    height: 100%;
+    background-color: #333333;
+    z-index: -1;
+}
+
+.top-menu {
+    margin: 0;
+    padding: 0;
+}
+
+/* Elementy menu w linii */
+.top-menu > ul > li {
+    display: inline-block;
+    float: none !important;
+    vertical-align: middle;
+    /* SEPARATOR KATEGORII (|) */
+    border-right: 1px solid #555555; 
+}
+
+/* Ukrywamy separator dla ostatniego elementu */
+.top-menu > ul > li:last-child {
+    border-right: none;
+}
+
+/* Linki w menu */
+.top-menu a[data-depth="0"] {
+    color: #e0e0e0 !important;
+    font-size: 15px;
+    padding: 12px 20px; /* Odstępy między kreskami a tekstem */
+    font-weight: 400;
+    display: block;
+}
+
+.top-menu a[data-depth="0"]:hover {
+    color: #fff !important;
+    background: #444;
+    text-decoration: none;
+}
+
+/* Zielony kolor dla NOWOŚCI (ostatni element) */
+.top-menu > ul > li:last-child a[data-depth="0"] {
+    color: #8bc34a !important;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+/* Resetujemy kontenery nadrzędne na stronie głównej */
+body#index #wrapper {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+    overflow-x: hidden; /* Zapobiega poziomemu paskowi przewijania */
+}
+
+body#index #wrapper .container {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Ustawiamy kontener slidera na 100% szerokości ekranu */
+body#index #carousel {
+    width: 100vw !important; /* Szerokość okna przeglądarki */
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw !important;
+    margin-right: -50vw !important;
+    margin-top: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* Wymuszamy rozmiar wewnętrznego boxa */
+body#index #carousel .carousel-inner {
+    width: 100% !important;
+    height: 500px !important;
+}
+
+body#index #carousel .carousel-item {
+    height: 100% !important;
+}
+
+/* Skalowanie zdjęcia */
+body#index #carousel .carousel-item img {
+    width: 100vw !important;     /* Musi być szerokość okna */
+    height: 100% !important;     /* Wypełnij wysokość ustawioną w pkt 3 */
+    
+    object-fit: cover !important; /* KLUCZOWE: Wypełnij przestrzeń, przytnij nadmiar, nie spłaszczaj! */
+    object-position: center center !important; /* Środek zdjęcia zawsze widoczny */
+    
+    display: block !important;
+    max-width: none !important;  /* Ignoruj limity Presty */
+    min-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Ukrywam napisy na sliderze (opcjonalnie, bo często psują efekt) */
+body#index #carousel .carousel-caption {
+    display: none !important; 
+}
+
+
+/* 1. Ustawienia kontenera listy produktów */
+#products .products, 
+.featured-products .products, 
+.product-accessories .products {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left: 60px; /* Kompensacja odstępów */
+    margin-right: 60px;
+    justify-content: center; /* WYŚRODKOWANIE PRODUKTÓW */
+}
+
+
+/* Stylizacja pojedynczego elementu (Diva otaczającego) */
+.products .js-product {
+    padding-left: 5px;  /* Odstępy między produktami */
+    padding-right: 5px;
+    margin-bottom: 20px;
+}
+
+/* RESPONSYWNOŚĆ */
+
+/* MOBILE (do 576px): 1 produkt w rzędzie */
+@media (max-width: 575px) {
+    .products .js-product {
+        flex: 0 0 90%;
+        max-width: 90%;
+    }
+}
+
+/* TABLET I MAŁY LAPTOP (576px - 1199px): 3 produkty w rzędzie */
+/* (Możesz zmienić na 50%, jeśli wolisz 2 produkty) */
+@media (min-width: 576px) and (max-width: 1199px) {
+    .products .js-product {
+        flex: 0 0 30.333%; /* 3 produkty */
+        max-width: 30.333%;
+    }
+}
+
+/* DUŻY EKRAN (powyżej 1200px): 5 PRODUKTÓW W RZĘDZIE */
+@media (min-width: 1200px) {
+    .products .js-product {
+        flex: 0 0 16%;      /* 100% / 5 = 20% */
+        max-width: 16%;
+        width: 16%;
+    }
+}
+
+/* Resetujem tło i obramowanie dla wewnętrznych kontenerów produktow */
+.product-miniature .thumbnail-container {
+    background: transparent !important; /* Usuwamy tło z wnętrza */
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important; /* Usuwa biały odstęp wokół zdjęcia */
+}
+
+/* Stylizujemy tylko GŁÓWNY kafelek */
+.js-product-miniature {
+    background: #ffffff !important; /* Białe tło tylko tutaj */
+    border: 1px solid #e5e5e5; /* Delikatna szara ramka (opcjonalna) */
+    padding: 0 !important; /* Zdjęcie ma dotykać krawędzi */
+    overflow: hidden; /* Żeby nic nie wystawało */
+    transition: box-shadow 0.3s;
+}
+
+/* Opcjonalnie: Efekt uniesienia po najechaniu */
+.js-product-miniature:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Wymuszamy, żeby zdjęcie wypełniało cały kafelek (bez marginesów) */
+.product-miniature img {
+    width: 100% !important;
+    margin: 0 !important;
+}
+
+/* Dodajemy margines tylko dla tekstu (tytuł, cena), żeby nie przyklejał się do krawędzi */
+.product-description {
+    padding: 15px !important; /* Odstęp tekstu od krawędzi kafelka */
+    background: #ffffff;
+}
+
+/* NIESTANDARDOWY BLOK TEKSTOWY (HOME) */
+
+/* Działa na ekranach komputerów (powyżej 992px) */
+@media (min-width: 992px) {
+    #custom-text {
+        /* 1. Ustalamy szerokość bloku (musi być węższy niż ekran) */
+        max-width: 80%; /* Możesz zmienić na np. 60% */
+        width: 100%;
+
+        /* 2. Centrujemy KONTENER na stronie */
+        margin-left: auto !important;
+        margin-right: auto !important;
+        margin-top: 30px !important;
+
+        /* 3. Wyrównujemy TEKST wewnątrz do lewej */
+        text-align: left !important;
+        
+        /* Opcjonalnie: poprawki estetyczne */
+        padding: 0 15px; /* Lekki odstęp boczny wewnątrz */
+        padding-top: 40px;
+        display: block;
+    }
+    
+    /* Jeśli w środku są nagłówki (h1, h2) lub paragrafy (p), też wymuszamy lewo */
+    #custom-text h2, 
+    #custom-text p {
+        text-align: left !important;
+    }
+}
+
