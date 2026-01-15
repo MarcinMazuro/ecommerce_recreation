@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+    <name>paypal</name>
+    <displayName><![CDATA[PayPal]]></displayName>
+    <version><![CDATA[6.5.0]]></version>
+    <description><![CDATA[Bezpłatny moduł PayPal może pom&oacute;c w zwiększeniu sprzedaży, zapewniając sklepom opcę płatności poprzez PayPal.]]></description>
+    <author><![CDATA[202 ecommerce]]></author>
+    <tab><![CDATA[payments_gateways]]></tab>
+	<confirmUninstall><![CDATA[Czy na pewno chcesz usunąć swoje dane?]]></confirmUninstall>
+    <is_configurable>1</is_configurable>
+    <need_instance>1</need_instance>
+	<limited_countries></limited_countries>
+</module>

@@ -9,11 +9,10 @@ __pycache__/
 .pytest_cache/
 
 # PrestaShop - nie wersjonujemy plików sklepu, cache, uploadów
-app/config/html/
 app/config/db-data/
 app/config/ssl/*.key
 
-# Zezwalaj na customizacje (jeśli robicie własny theme/moduły)
+# Zezwalaj na customizacje
 !app/config/html/themes/
 app/config/html/themes/classic/
 !app/config/html/themes/custom*/
@@ -32,6 +31,9 @@ app/config/html/admin*/autoupgrade/
 app/config/html/admin*/backups/
 app/config/html/admin*/import/
 app/config/html/admin*/export/
+app/config/html/cache
+app/config/html/logs/
+**/vendor/
 
 # Nie wersjonuj wrażliwych plików konfiguracyjnych (zawierają hasła)
 app/config/html/app/config/parameters.php
