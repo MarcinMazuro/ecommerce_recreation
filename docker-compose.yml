@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  prestashop:
+    image: mazuromarcin/be_198019:latest
+    networks:
+      - admin-mysql_default
+    ports:
+      - "19804:443"
+    environment:
+      PS_DEV_MODE: "1"
+      DB_SERVER: admin-mysql_db
+      DB_NAME: BE_198019
+      DB_USER: root
+      DB_PASSWD: student
+      PS_INSTALL_AUTO: "0"
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == student-swarm01
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1024M
+
+networks:
+  admin-mysql_default:
+    external: true
