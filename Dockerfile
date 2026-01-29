@@ -23,7 +23,7 @@ COPY --chown=www-data:www-data app/config/html/classes /var/www/html/classes
 # Kopiuj dump bazy danych
 COPY app/config/db-export/dump_2026-01-24_23-10.sql /seed/prestashop.sql
 
-# Kopiuj skrypt startowy (POPRAWIONA NAZWA!)
+# Kopiuj skrypt startowy
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # Generuj SSL certificate
